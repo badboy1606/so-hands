@@ -37,11 +37,11 @@ BLOCK_GEOM = "block_geom"
 EE_SITE    = "ee_site"
 
 Q_INIT  = [1.5, -0.5,  0.5,  0.0, 0.0]
-Q_ABOVE = [0.0, -2.5,  2.5,  0.5, 0.0]
-Q_LOWER = [0.0, -2.0,  2.5,  0.5, 0.0]
+Q_ABOVE = [0.0, -2.5,  2.5,  0.5, 0.0]   # EE ≈ [0, -0.288, 0.145]  15 cm above block
+Q_LOWER = [0.0, -2.0,  2.5,  0.5, 0.0]   # EE ≈ [0, -0.275, 0.041]  fingers at block
 Q_LIFT  = [0.0, -2.5,  2.5,  0.0, 0.0]
 
-OPEN_ANGLE = -0.3   # fingers wide open
+OPEN_ANGLE = -0.3   # fingers open during descent
 MAX_ANGLE  =  1.6   # max close angle — position controller presses at full force here
 
 # Interpolation speeds (α units per sim-second)
@@ -52,8 +52,10 @@ LIFT_SPEED   = 0.07   # slow rise so grip doesn't slip
 
 MIN_CONTACT_FINGERS = 3   # require 3 sides before accelerating descent
 
-# How long to hold MAX_ANGLE before lifting (lets physics settle the grip)
-GRASP_SETTLE_SECS = 2.0
+# Grasp: fingers ramp from OPEN_ANGLE to MAX_ANGLE over CLOSE_SECS,
+# then hold at MAX_ANGLE for HOLD_SECS so grip settles before lift.
+CLOSE_SECS = 2.0   # time to fully curl fingers (smooth ramp, not a jump)
+HOLD_SECS  = 1.0   # extra hold at max grip before lifting
 
 
 def set_arm_ctrl(model, data, q):
@@ -186,24 +188,32 @@ def main():
                 adv = lower_alpha[0] >= 1.0
 
             # ── GRASP ────────────────────────────────────────────────────────
-            # All 4 fingers drive to MAX_ANGLE simultaneously.
-            # The position controller applies up to forcerange to reach target;
-            # fingers physically stop at block surface and press with full,
-            # symmetric force on all four sides — no tilting, no slipping.
+            # Ramp all 4 fingers together from OPEN_ANGLE → MAX_ANGLE over
+            # CLOSE_SECS, then hold for HOLD_SECS.
+            # Smooth ramp lets fingers curl around the block sides rather than
+            # jerking to target; equal targets on all 4 = symmetric pressure.
             elif phase == "GRASP":
-                set_all_fingers(model, data, MAX_ANGLE)
+                close_steps = int(CLOSE_SECS / dt)
+                hold_steps  = int(HOLD_SECS  / dt)
+                if sip < close_steps:
+                    t_frac = sip / close_steps
+                    target = OPEN_ANGLE + t_frac * (MAX_ANGLE - OPEN_ANGLE)
+                else:
+                    target = MAX_ANGLE
+                set_all_fingers(model, data, target)
+
                 if sip == 0:
                     ee = data.site_xpos[site_id]
                     bc = data.xpos[block_bid].copy()
-                    print(f"\n[GRASP] All fingers → MAX_ANGLE={MAX_ANGLE} rad "
-                          f"(symmetric, full force)...")
+                    print(f"\n[GRASP] Curling fingers ({CLOSE_SECS}s ramp → hold {HOLD_SECS}s)...")
                     print(f"  EE={np.round(ee,3)}  Block={np.round(bc,3)}")
                 if sip % 400 == 399:
-                    n = count_finger_contacts(data, tip_gids, block_gid)
+                    n  = count_finger_contacts(data, tip_gids, block_gid)
                     bz = data.xpos[block_bid][2]
-                    print(f"  t={sip*dt:.1f}s  fingers_on_block={n}  blockZ={bz*100:.1f}cm")
-                # Wait for grip to physically settle — only timer in the sequence
-                adv = sip >= int(GRASP_SETTLE_SECS / dt)
+                    print(f"  t={sip*dt:.1f}s  target={target:.2f}rad  "
+                          f"fingers_on_block={n}  blockZ={bz*100:.1f}cm")
+
+                adv = sip >= close_steps + hold_steps
 
             # ── LIFT ─────────────────────────────────────────────────────────
             # Slow interpolated rise from Q_LOWER → Q_LIFT.
