@@ -1,22 +1,3 @@
-"""
-pick_block.py — SO-ARM100 + dexterous hand, hardcoded joint-angle pick.
-
-No IK. Joint angles from workspace scan:
-
-  Q_INIT  [1.5,-0.5, 0.5, 0.0,0] → EE=[0.44,-0.07,0.17]   sideways, clear
-  Q_ABOVE [0.0,-2.5, 2.5, 0.5,0] → EE=[0,-0.288,0.145]    15 cm above block
-  Q_LOWER [0.0,-2.0, 2.5, 0.5,0] → EE=[0,-0.275,0.041]    fingers at block
-  Q_LIFT  [0.0,-2.5, 2.5, 0.0,0] → EE=[0,-0.302,0.226]    arm raised
-
-Phases:
-  HOME  – arm settles sideways, clear of block
-  ABOVE – slow interpolated swing above block
-  LOWER – slow descent; accelerates when 3+ fingers touch; stops at α=1.0
-  GRASP – all 4 fingers drive simultaneously to MAX_ANGLE (symmetric pressure)
-          physics stops them at block surface; full motor force = tight grip
-  LIFT  – slow interpolated rise; fingers held at MAX_ANGLE throughout
-  HOLD  – display result
-"""
 
 import numpy as np
 import mujoco
