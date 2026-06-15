@@ -1,22 +1,9 @@
 # Hand x Arm (SO-100 + Amazing Hand)
 
-This project is about integrating the **SO-100 arm** with the **Amazing Hand** into one MuJoCo model and running simple motion + grasp demos.
-
----
-
-## What this project is
-
-The goal is to combine:
-
-- **SO-100** (5-DOF arm)
-- **Amazing Hand** (multi-finger hand)
-
-into a single robot setup for:
-
-- simulation in MuJoCo,
-- testing coordinated arm + hand movement,
-- and experimenting with basic pick-and-lift behavior.
-
+An open-source MuJoCo model combining the SO-100 robotic arm with the Amazing Hand dexterous hand.  
+Provides a unified XML file and assets for easy simulation and development.  
+Suitable for manipulation, grasping, control, and reinforcement learning research.  
+Designed for integration with MuJoCo-based robotics frameworks and workflows.  
 
 
 <p align="center">
@@ -47,7 +34,6 @@ into a single robot setup for:
 
 - Python 3.10+
 - MuJoCo (`mujoco`)
-- PySerial (`pyserial`)
 
 ### Setup (using uv)
 
@@ -68,7 +54,7 @@ uv sync
 Alternatively, use pip:
 
 ```bash
-pip install mujoco pyserial
+pip install mujoco
 ```
 
 ---
@@ -101,7 +87,7 @@ python pick_block.py
 ## Reference links
 
 - SO-100: https://github.com/TheRobotStudio/SO-ARM100
-- Amazing Hand: <ADD_HAND_LINK_HERE>
+- Amazing Hand: https://github.com/pollen-robotics/AmazingHand
 
 ---
 
